@@ -657,7 +657,8 @@
   .modal-wrap { position: relative; }
 
   /* Reveal animation */
-  .anim { opacity: 0; transform: translateY(24px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+  .anim { transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+  .js .anim:not(.in) { opacity: 0; transform: translateY(24px); }
   .anim.in { opacity: 1; transform: none; }
 </style>
 </head>
@@ -1008,6 +1009,8 @@
 </div>
 
 <script>
+  document.documentElement.classList.add('js');
+
   // Theme toggle
   const themeBtn = document.getElementById('theme-btn');
   const root = document.documentElement;
@@ -1038,11 +1041,18 @@
     applyLang(next);
   });
 
-  // Reveal on scroll
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.anim').forEach(el => io.observe(el));
+  // Reveal on scroll (failsafe: reveal all after 1.5s in case IO misses)
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.08, rootMargin: '0px 0px -10% 0px' });
+    document.querySelectorAll('.anim').forEach(el => io.observe(el));
+  } else {
+    document.querySelectorAll('.anim').forEach(el => el.classList.add('in'));
+  }
+  setTimeout(() => {
+    document.querySelectorAll('.anim:not(.in)').forEach(el => el.classList.add('in'));
+  }, 1500);
 
   // Animate language bars when section visible
   const langIO = new IntersectionObserver((entries) => {
